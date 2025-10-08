@@ -433,6 +433,18 @@ app.get(/.*/, (req, res) => {
 
 app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}`);
+        console.log('[debug] Server started, setting up process handlers...');
+        
+        // Keep the process alive
+        process.on('uncaughtException', (err) => {
+                console.error('[FATAL] Uncaught exception:', err);
+                process.exit(1);
+        });
+        
+        process.on('unhandledRejection', (reason, promise) => {
+                console.error('[FATAL] Unhandled rejection at:', promise, 'reason:', reason);
+        });
+        
         try {
                 const routes = [];
                 (app._router && app._router.stack || []).forEach(l => {
@@ -452,4 +464,13 @@ app.listen(port, () => {
                         console.log('[startup] If /admin-basic 404s, try /admin-basic.html (static file)');
                 }
         } catch (e) { console.warn('Route log failed', e); }
+        
+        console.log('[debug] Server initialization complete, ready for requests');
+        
+        // Force keep alive - this should prevent the process from exiting
+        setInterval(() => {
+                // Do nothing, just keep the event loop alive
+        }, 30000);
+        
+        console.log('[debug] Keep-alive timer started');
 });

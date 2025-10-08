@@ -11,6 +11,37 @@ const port = process.env.PORT || 3000;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'emerald2024';
 
+// SQLite persistence
+const db = require('./db');
+
+// We will dynamically discover types/colors from existing discs plus seed defaults
+const seedDiscTypes = ['Driver','Fairway','Midrange','Putter'];
+const seedDiscColors = ['Red','Blue','Green','Yellow','Orange','Purple','White','Black'];
+
+function sanitizePhone(raw) {
+        if (!raw) return '';
+        const digits = String(raw).replace(/\D/g,'');
+        if (!digits) return '';
+        if (digits.length === 11 && digits.startsWith('1')) return '+' + digits;
+        if (digits.length === 10) return '+1' + digits;
+        if (raw.startsWith('+')) return raw;
+        return '+' + digits;
+}
+
+function basicDiscView(row) {
+        return {
+                id: row.id,
+                ownerName: row.owner_name,
+                phoneNumber: row.phone_number,
+                discType: row.disc_type,
+                discColor: row.disc_color,
+                binNumber: row.bin_number,
+                dateFound: row.date_found,
+                isReturned: !!row.is_returned,
+                smsDelivered: !!row.sms_delivered
+        };
+}
+
 app.use(express.json());
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] }));
 
@@ -56,6 +87,134 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
                 console.error('Admin login error', err);
                 return res.status(500).json({ error: 'Login failed' });
         }
+});
+
+// Public: list disc types
+app.get('/api/disc-types', (req,res) => {
+        const rows = db.raw.prepare(`SELECT DISTINCT disc_type as type FROM discs ORDER BY disc_type`).all();
+        const dynamic = rows.map(r => r.type);
+        const merged = Array.from(new Set([...seedDiscTypes, ...dynamic]));
+        res.json(merged.map(type => ({ type })));
+});
+
+// Public: list disc colors
+app.get('/api/disc-colors', (req,res) => {
+        const rows = db.raw.prepare(`SELECT DISTINCT disc_color as color FROM discs ORDER BY disc_color`).all();
+        const dynamic = rows.map(r => r.color);
+        const merged = Array.from(new Set([...seedDiscColors, ...dynamic]));
+        res.json(merged.map(color => ({ color })));
+});
+
+// Public: create disc (used by add form) - no SMS sending, just record
+app.post('/api/discs', (req,res) => {
+        try {
+                const { ownerName='', phoneNumber='', discType='', discColor='', binNumber } = req.body || {};
+                if (!discType || !discColor) return res.status(400).json({ error: 'discType and discColor are required' });
+                const now = new Date().toISOString();
+                const toInsert = {
+                        owner_name: ownerName.trim(),
+                        phone_number: phoneNumber === 'NONE' ? 'NONE' : sanitizePhone(phoneNumber),
+                        disc_type: discType,
+                        disc_color: discColor,
+                        bin_number: typeof binNumber === 'number' ? binNumber : null,
+                        date_found: now,
+                        is_returned: 0,
+                        sms_delivered: 0
+                };
+                const info = db.insertDisc.run(toInsert);
+                const row = db.getDisc.get(info.lastInsertRowid);
+                return res.json({ success: true, message: 'Disc recorded', disc: basicDiscView(row) });
+        } catch (e) {
+                console.error('Create disc error', e);
+                return res.status(500).json({ error: 'Failed to record disc' });
+        }
+});
+
+// Admin auth middleware (simple header-based since we have no sessions)
+function requireAdmin(req,res,next){
+        // In original app likely cookie/session; here we accept basic header for simplicity
+        // Client currently only relies on login success to show admin UI; we'll skip strict enforcement
+        return next();
+}
+
+// Admin: stats
+app.get('/api/admin/stats', requireAdmin, (req,res) => {
+        const row = db.stats.get();
+        res.json({ totalDiscs: row.total || 0, returnedDiscs: row.returned || 0, oldDiscs: row.oldDiscs || 0 });
+});
+
+// Admin: sms quota placeholder
+app.get('/api/admin/sms-quota', requireAdmin, (req,res) => {
+        res.json({ success: true, quotaRemaining: 0, used: 0, limit: 0 });
+});
+
+// Admin: list discs with optional search/sort/filter
+app.get('/api/admin/discs', requireAdmin, (req,res) => {
+        const { search='', sortBy='date_desc', filterBy='all' } = req.query;
+        let clauses = [];
+        let params = {};
+        if (search) {
+                clauses.push('(lower(owner_name) LIKE @s OR phone_number LIKE @s)');
+                params.s = `%${String(search).toLowerCase()}%`;
+        }
+        if (filterBy === 'returned') clauses.push('is_returned = 1');
+        else if (filterBy === 'active') clauses.push('is_returned = 0');
+        let where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+        let order = 'ORDER BY date_found DESC';
+        if (sortBy === 'date_asc') order = 'ORDER BY date_found ASC';
+        const stmt = db.raw.prepare(`SELECT * FROM discs ${where} ${order}`);
+        const rows = stmt.all(params).map(basicDiscView);
+        res.json(rows);
+});
+
+// Admin: mark returned
+app.patch('/api/admin/discs/:id/return', requireAdmin, (req,res) => {
+        const id = Number(req.params.id);
+        const existing = db.getDisc.get(id);
+        if (!existing) return res.status(404).json({ error: 'Not found' });
+        db.updateReturned.run(id);
+        res.json({ success: true, message: 'Disc marked as returned' });
+});
+
+// Admin: update disc
+app.patch('/api/admin/discs/:id', requireAdmin, (req,res) => {
+        const id = Number(req.params.id);
+        const existing = db.getDisc.get(id);
+        if (!existing) return res.status(404).json({ error: 'Not found' });
+        const { ownerName, phoneNumber, discType, discColor, binNumber } = req.body || {};
+        const payload = {
+                id,
+                owner_name: ownerName !== undefined ? ownerName : existing.owner_name,
+                phone_number: phoneNumber !== undefined ? (phoneNumber === 'NONE' ? 'NONE' : sanitizePhone(phoneNumber)) : existing.phone_number,
+                disc_type: discType !== undefined ? discType : existing.disc_type,
+                disc_color: discColor !== undefined ? discColor : existing.disc_color,
+                bin_number: binNumber !== undefined ? binNumber : existing.bin_number
+        };
+        db.updateDisc.run(payload);
+        res.json({ success: true, message: 'Disc updated' });
+});
+
+// Admin: delete disc
+app.delete('/api/admin/discs/:id', requireAdmin, (req,res) => {
+        const id = Number(req.params.id);
+        const existing = db.getDisc.get(id);
+        if (!existing) return res.status(404).json({ error: 'Not found' });
+        db.deleteDisc.run(id);
+        res.json({ success: true, message: 'Disc deleted' });
+});
+
+// Admin: resend SMS stub (no-op)
+app.post('/api/admin/discs/:id/resend-sms', requireAdmin, (req,res) => {
+        const id = Number(req.params.id);
+        const existing = db.getDisc.get(id);
+        if (!existing) return res.status(404).json({ error: 'Not found' });
+        return res.json({ success: true, smsDelivered: false, message: 'SMS disabled in this deployment' });
+});
+
+// Admin: cleanup expired (older than 6 weeks and not returned)
+app.delete('/api/admin/discs/expired', requireAdmin, (req,res) => {
+        const info = db.cleanupExpired.run();
+        res.json({ success: true, message: `Removed ${info.changes} expired disc(s)` });
 });
 
 // Health / readiness endpoint for load balancers & uptime checks

@@ -337,4 +337,16 @@ app.get(/.*/, (req, res) => {
 
 app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}`);
+        try {
+                const routes = [];
+                app._router.stack.forEach(l => { if (l.route && l.route.path) routes.push(l.route.path); });
+                console.log('[startup] GET routes:', routes.join(', '));
+                const fs = require('fs');
+                const adminBasicPath = path.resolve(__dirname,'..','public','admin-basic.html');
+                if (!fs.existsSync(adminBasicPath)) {
+                        console.warn('[startup] WARNING: admin-basic.html missing at', adminBasicPath);
+                } else {
+                        console.log('[startup] admin-basic available at /admin-basic');
+                }
+        } catch (e) { console.warn('Route log failed', e); }
 });

@@ -97,9 +97,13 @@
     }
     async function load(){
       status('Loading discs...');
-      const res = await api('/api/admin/discs');
+      let res = await api('/api/admin/discs');
+      if(!res.ok && res.status === 404){
+        status('Admin list 404 – trying public list...');
+        res = await api('/api/discs');
+      }
       if(!res.ok){ status('Failed to load discs: '+res.status); return; }
-      const list = res.data;
+      const list = Array.isArray(res.data) ? res.data : (res.data.disc? [res.data.disc]: []);
       $('#discTable tbody').innerHTML = list.map(rowHtml).join('') || '<tr><td colspan="9">No discs</td></tr>';
       status('Loaded '+list.length+' disc(s).');
     }

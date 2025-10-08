@@ -104,6 +104,9 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
         }
 });
 
+// Simple ping for diagnostics
+app.get('/api/ping', (req,res) => res.json({ ok:true, time: Date.now() }));
+
 // Public: list disc types
 app.get('/api/disc-types', (req,res) => {
         const rows = db.raw.prepare(`SELECT DISTINCT disc_type as type FROM discs ORDER BY disc_type`).all();

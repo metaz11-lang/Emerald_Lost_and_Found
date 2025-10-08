@@ -49,6 +49,37 @@
           }
         } catch (e) { console.error('[emerald][admin diag] failed', e); }
       })();
+      
+      // Listen for disc creation events and force refresh
+      window.addEventListener('discCreated', () => {
+        console.log('[emerald][admin] disc created, forcing page reload in 500ms');
+        setTimeout(() => location.reload(), 500);
+      });
+      
+      // Also check for successful form submissions on the main page
+      setInterval(async () => {
+        if (window.lastDiscCount === undefined) {
+          try {
+            const res = await fetch('/api/discs');
+            if (res.ok) {
+              const discs = await res.json();
+              window.lastDiscCount = discs.length;
+            }
+          } catch {}
+        } else {
+          try {
+            const res = await fetch('/api/discs');
+            if (res.ok) {
+              const discs = await res.json();
+              if (discs.length > window.lastDiscCount) {
+                console.log('[emerald][admin] disc count increased, refreshing');
+                location.reload();
+              }
+              window.lastDiscCount = discs.length;
+            }
+          } catch {}
+        }
+      }, 2000);
     </script>
   </body>
 </html>

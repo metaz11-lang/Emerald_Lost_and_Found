@@ -178,8 +178,13 @@ app.get('/api/disc-colors', (req,res) => {
 // Public: create disc (used by add form) - no SMS sending, just record
 app.post('/api/discs', (req,res) => {
         try {
+                console.log('[disc:create:start] request body:', JSON.stringify(req.body));
                 const { ownerName='', phoneNumber='', discType='', discColor='', binNumber } = req.body || {};
-                if (!discType || !discColor) return res.status(400).json({ error: 'discType and discColor are required' });
+                console.log('[disc:create:parsed] ownerName="%s" phoneNumber="%s" discType="%s" discColor="%s" binNumber=%s', ownerName, phoneNumber, discType, discColor, binNumber);
+                if (!discType || !discColor) {
+                        console.log('[disc:create:error] missing required fields');
+                        return res.status(400).json({ error: 'discType and discColor are required' });
+                }
                 const now = new Date().toISOString();
                 const toInsert = {
                         owner_name: ownerName.trim(),
@@ -191,16 +196,17 @@ app.post('/api/discs', (req,res) => {
                         is_returned: 0,
                         sms_delivered: 0
                 };
+                console.log('[disc:create:inserting] data:', JSON.stringify(toInsert));
                 const info = db.insertDisc.run(toInsert);
                 const row = db.getDisc.get(info.lastInsertRowid);
                 const total = db.stats.get().total;
-                console.log('[disc:create] id=%s total=%s payload=%j', row.id, total, {
+                console.log('[disc:create:SUCCESS] id=%s total=%s payload=%j', row.id, total, {
                   ownerName: row.owner_name, phoneNumber: row.phone_number, discType: row.disc_type, discColor: row.disc_color, binNumber: row.bin_number
                 });
                 res.setHeader('X-Disc-Count', total ?? 0);
                 return res.json({ success: true, message: 'Disc recorded', disc: basicDiscView(row) });
         } catch (e) {
-                console.error('Create disc error', e);
+                console.error('[disc:create:ERROR]', e);
                 return res.status(500).json({ error: 'Failed to record disc' });
         }
 });

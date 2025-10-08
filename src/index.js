@@ -56,6 +56,9 @@ app.use((req,res,next) => {
 app.get('/admin-basic', (req,res) => {
         res.sendFile(path.resolve(__dirname, '..', 'public', 'admin-basic.html'));
 });
+app.get('/manage', (req,res) => {
+        res.redirect(302, '/admin-basic');
+});
 
 // Basic rate limiter (tune for production needs)
 const loginLimiter = rateLimit({
@@ -339,14 +342,21 @@ app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}`);
         try {
                 const routes = [];
-                app._router.stack.forEach(l => { if (l.route && l.route.path) routes.push(l.route.path); });
-                console.log('[startup] GET routes:', routes.join(', '));
+                (app._router && app._router.stack || []).forEach(l => {
+                        try {
+                                if (l.route && l.route.path && l.route.methods && l.route.methods.get) {
+                                        routes.push(String(l.route.path));
+                                }
+                        } catch {}
+                });
+                console.log('[startup] GET routes:', routes.length ? routes.join(', ') : '(none found)');
                 const fs = require('fs');
                 const adminBasicPath = path.resolve(__dirname,'..','public','admin-basic.html');
                 if (!fs.existsSync(adminBasicPath)) {
                         console.warn('[startup] WARNING: admin-basic.html missing at', adminBasicPath);
                 } else {
                         console.log('[startup] admin-basic available at /admin-basic');
+                        console.log('[startup] If /admin-basic 404s, try /admin-basic.html (static file)');
                 }
         } catch (e) { console.warn('Route log failed', e); }
 });

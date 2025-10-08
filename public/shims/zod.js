@@ -1,19 +1,30 @@
 // Lightweight shim for zod used only to avoid runtime import errors in the browser.
 // Provide z.string().min() and simple chainable APIs used by the client bundle.
 
-const base = {
-	string: () => ({
-		__zodShim: true,
-		min: () => ({ __zodShim: true }),
-		max: () => ({ __zodShim: true }),
-		optional: () => ({ __zodShim: true }),
-		nullable: () => ({ __zodShim: true }),
-	}),
-	number: () => ({ __zodShim: true }),
-	object: (schema) => ({ __zodShim: true, schema }),
-	array: (t) => ({ __zodShim: true, of: t }),
+function fluent(){
+	const handler = {
+		get(_t, prop){
+			if (prop === 'parse') return (v)=>v;
+			if (prop === 'safeParse') return (v)=>({ success:true, data:v });
+			if (prop === 'shape') return {};
+			return proxy; // any chained property is also callable
+		},
+		apply(){ return proxy; }
+	};
+	const proxy = new Proxy(function(){}, handler);
+	return proxy;
+}
+
+export const z = {
+	string: () => fluent(),
+	number: () => fluent(),
+	boolean: () => fluent(),
+	date: () => fluent(),
+	object: () => fluent(),
+	array: () => fluent(),
+	union: () => fluent(),
+	literal: () => fluent(),
+	enum: () => fluent(),
 };
 
-// Export `z` as an object with helpers so calls like `z.string().min()` work.
-export const z = base;
 export default { z };

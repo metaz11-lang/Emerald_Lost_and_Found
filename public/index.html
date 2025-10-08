@@ -66,6 +66,14 @@
             throw e;
           }
         };
+
+        // When a disc is created, force a refresh on /admin so new entries show immediately.
+        window.addEventListener('discCreated', () => {
+          if (location.pathname.startsWith('/admin')) {
+            console.log('[emerald][debug] auto-reloading admin view after discCreated');
+            location.reload();
+          }
+        });
       } catch (e) {
         try { console.error(e); } catch {};
       }

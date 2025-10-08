@@ -123,6 +123,11 @@ app.post('/api/discs', (req,res) => {
                 };
                 const info = db.insertDisc.run(toInsert);
                 const row = db.getDisc.get(info.lastInsertRowid);
+                const total = db.stats.get().total;
+                console.log('[disc:create] id=%s total=%s payload=%j', row.id, total, {
+                  ownerName: row.owner_name, phoneNumber: row.phone_number, discType: row.disc_type, discColor: row.disc_color, binNumber: row.bin_number
+                });
+                res.setHeader('X-Disc-Count', total ?? 0);
                 return res.json({ success: true, message: 'Disc recorded', disc: basicDiscView(row) });
         } catch (e) {
                 console.error('Create disc error', e);
@@ -141,6 +146,7 @@ app.get('/api/discs', (req,res) => {
                         params.s = `%${String(search).toLowerCase()}%`;
                 }
                 const rows = db.raw.prepare(`SELECT id, owner_name, phone_number, disc_type, disc_color, bin_number, date_found, is_returned, sms_delivered FROM discs ${where} ORDER BY date_found DESC LIMIT 500`).all(params);
+                res.setHeader('X-Disc-Count', rows.length);
                 res.json(rows.map(basicDiscView));
         } catch (e) {
                 console.error('List discs error', e);
@@ -182,6 +188,8 @@ app.get('/api/admin/discs', requireAdmin, (req,res) => {
         if (sortBy === 'date_asc') order = 'ORDER BY date_found ASC';
         const stmt = db.raw.prepare(`SELECT * FROM discs ${where} ${order}`);
         const rows = stmt.all(params).map(basicDiscView);
+        console.log('[disc:list:admin] count=%s filter=%s search="%s"', rows.length, req.query.filterBy, req.query.search);
+        res.setHeader('X-Disc-Count', rows.length);
         res.json(rows);
 });
 
@@ -233,6 +241,30 @@ app.post('/api/admin/discs/:id/resend-sms', requireAdmin, (req,res) => {
 app.delete('/api/admin/discs/expired', requireAdmin, (req,res) => {
         const info = db.cleanupExpired.run();
         res.json({ success: true, message: `Removed ${info.changes} expired disc(s)` });
+});
+
+// Debug: seed a test disc if none exist
+app.post('/api/debug/seed', (req,res) => {
+        try {
+                const row = db.stats.get();
+                if (row.total > 0) return res.json({ success: true, message: 'Already seeded', total: row.total });
+                const payload = {
+                        owner_name: 'Seed User',
+                        phone_number: '+16025550000',
+                        disc_type: 'Driver',
+                        disc_color: 'Blue',
+                        bin_number: 1,
+                        date_found: new Date().toISOString(),
+                        is_returned: 0,
+                        sms_delivered: 0
+                };
+                const info = db.insertDisc.run(payload);
+                console.log('[disc:seed] inserted id=%s', info.lastInsertRowid);
+                return res.json({ success: true, message: 'Seed disc inserted', id: info.lastInsertRowid });
+        } catch (e) {
+                console.error('Seed error', e);
+                return res.status(500).json({ error: 'Seed failed' });
+        }
 });
 
 // Health / readiness endpoint for load balancers & uptime checks

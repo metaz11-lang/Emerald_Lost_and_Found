@@ -130,6 +130,24 @@ app.post('/api/discs', (req,res) => {
         }
 });
 
+// Public: list discs (limited fields) with optional search (ownerName / phone / type / color)
+app.get('/api/discs', (req,res) => {
+        try {
+                const { search } = req.query;
+                let where = '';
+                let params = {};
+                if (search) {
+                        where = 'WHERE (lower(owner_name) LIKE @s OR phone_number LIKE @s OR lower(disc_type) LIKE @s OR lower(disc_color) LIKE @s)';
+                        params.s = `%${String(search).toLowerCase()}%`;
+                }
+                const rows = db.raw.prepare(`SELECT id, owner_name, phone_number, disc_type, disc_color, bin_number, date_found, is_returned, sms_delivered FROM discs ${where} ORDER BY date_found DESC LIMIT 500`).all(params);
+                res.json(rows.map(basicDiscView));
+        } catch (e) {
+                console.error('List discs error', e);
+                res.status(500).json({ error: 'Failed to list discs' });
+        }
+});
+
 // Admin auth middleware (simple header-based since we have no sessions)
 function requireAdmin(req,res,next){
         // In original app likely cookie/session; here we accept basic header for simplicity

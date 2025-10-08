@@ -7,6 +7,27 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// ULTRA-EARLY ADMIN CATCH: if a hard refresh hits /admin before other middleware
+// we serve admin.html here and log it so we can prove the server saw it.
+const fsEarly = require('fs');
+const adminHtmlPathEarly = path.resolve(__dirname, '..', 'public', 'admin.html');
+app.use((req,res,next) => {
+        if (req.method === 'GET' && (req.url === '/admin' || req.url === '/admin/' )) {
+                console.log('[early-admin] intercept', req.url, 'exists?', fsEarly.existsSync(adminHtmlPathEarly));
+                if (fsEarly.existsSync(adminHtmlPathEarly)) {
+                        return res.sendFile(adminHtmlPathEarly);
+                } else {
+                        return res.status(500).send('admin.html missing (early)');
+                }
+        }
+        next();
+});
+
+// Very simple check endpoint to verify this exact server build is running
+app.get('/__admin_check', (req,res) => {
+        res.json({ ok:true, marker:'early-admin-middleware-present', time: Date.now() });
+});
+
 // Configurable (demo) admin credentials via env with safe defaults (NOT production-ready auth)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'emerald2024';

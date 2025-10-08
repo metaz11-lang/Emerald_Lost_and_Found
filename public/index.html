@@ -83,6 +83,39 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="emerald-debug-tools" style="position:fixed;bottom:8px;right:8px;background:#0f172a;color:#f1f5f9;font:12px system-ui,Segoe UI,Arial;padding:8px 10px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.35);z-index:999999;line-height:1.4;display:none;">
+      <div style="font-weight:600;margin-bottom:4px;">Emerald Debug</div>
+      <button id="dbg-list" style="margin:2px 0;padding:2px 6px;font-size:12px;cursor:pointer;">List Discs</button>
+      <button id="dbg-seed" style="margin:2px 0;padding:2px 6px;font-size:12px;cursor:pointer;">Seed If Empty</button>
+      <pre id="dbg-out" style="margin:4px 0 0;max-width:260px;max-height:140px;overflow:auto;background:#1e293b;color:#e2e8f0;padding:4px 6px;border-radius:4px;"></pre>
+      <div style="text-align:right;margin-top:4px;"><button id="dbg-close" style="background:#334155;color:#f8fafc;border:none;padding:2px 6px;border-radius:3px;cursor:pointer;">Close</button></div>
+    </div>
+    <script>
+      (function(){
+        // Show panel automatically if query ?debug=1 or local dev
+        const debug = /[?&]debug=1/.test(location.search) || location.hostname === 'localhost';
+        if(!debug) return;
+        const panel = document.getElementById('emerald-debug-tools');
+        if(!panel) return;
+        panel.style.display='block';
+        const out = document.getElementById('dbg-out');
+        function w(msg){ out.textContent = (msg instanceof Error? msg.stack: typeof msg==='object'? JSON.stringify(msg,null,2): String(msg)); }
+        document.getElementById('dbg-close').onclick=()=>panel.remove();
+        document.getElementById('dbg-list').onclick=async()=>{
+          try{
+            const r = await fetch('/api/admin/discs');
+            const data = await r.json();
+            w({count:data.length, first:data[0]||null});
+          }catch(e){ w(e); }
+        };
+        document.getElementById('dbg-seed').onclick=async()=>{
+          try{
+            const r = await fetch('/api/debug/seed',{method:'POST'});
+            w(await r.json());
+          }catch(e){ w(e); }
+        };
+      })();
+    </script>
     
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>

@@ -289,6 +289,14 @@ app.get('/healthz', (req, res) => {
         res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// Explicit admin SPA route (exact) and regex for deeper admin paths
+app.get('/admin', (req,res) => {
+        res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
+});
+app.get(/^\/admin\//, (req,res) => {
+        res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
+});
+
 // JSON 404 for any unmatched /api/ path (must be before SPA catch-all)
 app.use('/api', (req,res) => {
         res.status(404).json({ error: 'Not found', path: req.originalUrl });

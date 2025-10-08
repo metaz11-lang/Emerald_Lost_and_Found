@@ -14,3 +14,9 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         value: emerald2024
+      - key: SQLITE_FILE
+        value: /opt/render/project/src/data/data.sqlite
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

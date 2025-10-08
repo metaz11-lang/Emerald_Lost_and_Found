@@ -111,6 +111,28 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
         }
 });
 
+// Admin status endpoint used by React admin to decide if dashboard should render
+app.get('/api/admin/status', (req,res) => {
+        try {
+                const cookie = req.headers.cookie || '';
+                const isAdmin = /emeraldSession=ok/.test(cookie);
+                res.json({ isAdmin });
+        } catch (e) {
+                res.status(500).json({ error: 'Status check failed' });
+        }
+});
+
+// Admin logout endpoint (clears cookie)
+app.post('/api/admin/logout', (req,res) => {
+        try {
+                // Overwrite cookie with immediate expiry
+                res.setHeader('Set-Cookie', 'emeraldSession=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+                res.json({ success: true, message: 'Logged out' });
+        } catch (e) {
+                res.status(500).json({ error: 'Logout failed' });
+        }
+});
+
 // Simple ping for diagnostics
 app.get('/api/ping', (req,res) => res.json({ ok:true, time: Date.now() }));
 

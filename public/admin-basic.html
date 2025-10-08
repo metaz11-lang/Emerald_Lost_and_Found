@@ -55,8 +55,9 @@
       <label for="binNumber">Bin # (optional)</label>
       <input id="binNumber" type="number" />
     </div>
-    <div style="margin-top:8px;">
+    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
       <button id="addBtn">Add Disc</button>
+      <button id="forceAddBtn" class="secondary" title="Uses a GET fallback if POST is blocked">Force Add (Fallback)</button>
     </div>
   </fieldset>
 
@@ -122,6 +123,17 @@
       status('Added disc ID '+ res.data.disc.id);
       await load();
     }
+    async function forceAdd(){
+      const discType = $('#discType').value.trim();
+      const discColor = $('#discColor').value.trim();
+      if(!discType || !discColor) return status('Type and Color required');
+      status('Force adding via GET fallback...');
+      const params = new URLSearchParams({ discType, discColor, ownerName: $('#ownerName').value.trim(), phoneNumber: $('#phoneNumber').value.trim(), binNumber: $('#binNumber').value.trim() });
+      const res = await api('/api/debug/add-disc?'+params.toString());
+      if(!res.ok){ status('Force add failed: '+res.status); return; }
+      status('Force added disc ID '+ (res.data.disc && res.data.disc.id));
+      await load();
+    }
     async function seed(){
       status('Seeding (only if empty)...');
       const r = await api('/api/debug/seed',{ method:'POST'});
@@ -151,6 +163,7 @@
       if(act==='delete') del(e.target.getAttribute('data-id'));
     });
     $('#addBtn').onclick = addDisc;
+  $('#forceAddBtn').onclick = forceAdd;
     $('#refreshBtn').onclick = load;
     $('#seedBtn').onclick = seed;
     $('#cleanupBtn').onclick = cleanup;

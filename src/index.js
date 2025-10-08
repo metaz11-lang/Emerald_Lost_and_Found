@@ -153,6 +153,31 @@ app.post('/api/discs', (req,res) => {
         }
 });
 
+// Backup (GET) disc creation for environments where POST might be blocked / misrouted
+// Example: /api/debug/add-disc?discType=Driver&discColor=Blue
+app.get('/api/debug/add-disc', (req,res) => {
+        try {
+                const { ownerName='', phoneNumber='', discType='', discColor='', binNumber } = req.query || {};
+                if (!discType || !discColor) return res.status(400).json({ error: 'discType and discColor required' });
+                const now = new Date().toISOString();
+                const toInsert = {
+                        owner_name: String(ownerName).trim(),
+                        phone_number: phoneNumber === 'NONE' ? 'NONE' : sanitizePhone(phoneNumber),
+                        disc_type: String(discType),
+                        disc_color: String(discColor),
+                        bin_number: binNumber !== undefined && binNumber !== '' ? Number(binNumber) : null,
+                        date_found: now,
+                        is_returned: 0,
+                        sms_delivered: 0
+                };
+                const info = db.insertDisc.run(toInsert);
+                const row = db.getDisc.get(info.lastInsertRowid);
+                res.json({ success:true, via:'debug-add', disc: basicDiscView(row) });
+        } catch (e) {
+                res.status(500).json({ error: 'Debug add failed', details: String(e) });
+        }
+});
+
 // Public: list discs (limited fields) with optional search (ownerName / phone / type / color)
 app.get('/api/discs', (req,res) => {
         try {

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emerald Lost & Found - Basic Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui,Segoe UI,Arial; margin: 0; padding: 16px; background:#f1f5f9; }
+    h1 { margin-top:0; }
+    fieldset { border:1px solid #94a3b8; padding:12px; border-radius:6px; background:#fff; }
+    legend { font-weight:600; }
+    label { display:block; margin:4px 0 2px; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#475569; }
+    input, select { width:100%; padding:6px 8px; font-size:14px; border:1px solid #94a3b8; border-radius:4px; }
+    button { cursor:pointer; background:#0f766e; color:#fff; border:none; padding:8px 14px; border-radius:4px; font-size:14px; }
+    button.secondary { background:#334155; }
+    button.danger { background:#b91c1c; }
+    table { width:100%; border-collapse:collapse; margin-top:16px; background:#fff; }
+    th, td { padding:6px 8px; border:1px solid #cbd5e1; font-size:12px; }
+    th { background:#e2e8f0; text-align:left; }
+    tr.returned { opacity:.55; }
+    #status { margin-top:12px; font-size:13px; white-space:pre-wrap; }
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+    .inline { display:inline-block; }
+  </style>
+</head>
+<body>
+  <h1>Emerald L&F – Basic Admin</h1>
+  <p>This simplified admin page lets you add and view discs without the original React admin interface.</p>
+
+  <div class="toolbar">
+    <button id="refreshBtn">Refresh List</button>
+    <button id="seedBtn" class="secondary">Seed If Empty</button>
+    <button id="cleanupBtn" class="secondary">Cleanup Expired</button>
+  </div>
+
+  <fieldset>
+    <legend>Add Disc</legend>
+    <div>
+      <label for="discType">Type</label>
+      <input id="discType" placeholder="Driver" />
+    </div>
+    <div>
+      <label for="discColor">Color</label>
+      <input id="discColor" placeholder="Blue" />
+    </div>
+    <div>
+      <label for="ownerName">Owner Name (optional)</label>
+      <input id="ownerName" />
+    </div>
+    <div>
+      <label for="phoneNumber">Phone (optional)</label>
+      <input id="phoneNumber" />
+    </div>
+    <div>
+      <label for="binNumber">Bin # (optional)</label>
+      <input id="binNumber" type="number" />
+    </div>
+    <div style="margin-top:8px;">
+      <button id="addBtn">Add Disc</button>
+    </div>
+  </fieldset>
+
+  <div id="status"></div>
+
+  <table id="discTable" aria-label="Disc list">
+    <thead>
+      <tr>
+        <th>ID</th><th>Type</th><th>Color</th><th>Owner</th><th>Phone</th><th>Bin</th><th>Found</th><th>Returned?</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const status = msg => { const el=$('#status'); el.textContent = typeof msg==='string'? msg: JSON.stringify(msg,null,2); };
+    async function api(path, opts){
+      const r = await fetch(path, Object.assign({ headers:{'Content-Type':'application/json'} }, opts||{}));
+      const text = await r.text();
+      try { return { ok:r.ok, status:r.status, data: JSON.parse(text) }; } catch { return { ok:false, status:r.status, data:text }; }
+    }
+    function rowHtml(d){
+      return `<tr data-id="${d.id}" class="${d.isReturned?'returned':''}">`+
+        `<td>${d.id}</td>`+
+        `<td>${d.discType}</td>`+
+        `<td>${d.discColor}</td>`+
+        `<td>${d.ownerName||''}</td>`+
+        `<td>${d.phoneNumber||''}</td>`+
+        `<td>${d.binNumber??''}</td>`+
+        `<td style="white-space:nowrap">${d.dateFound?.slice(0,10)||''}</td>`+
+        `<td>${d.isReturned? 'Yes':'No'}</td>`+
+        `<td>`+
+        (!d.isReturned? `<button data-act="return" data-id="${d.id}" style="background:#0369a1;">Mark Returned</button>`:'')+
+        ` <button data-act="delete" data-id="${d.id}" class="danger">Delete</button>`+
+        `</td>`+
+        `</tr>`;
+    }
+    async function load(){
+      status('Loading discs...');
+      const res = await api('/api/admin/discs');
+      if(!res.ok){ status('Failed to load discs: '+res.status); return; }
+      const list = res.data;
+      $('#discTable tbody').innerHTML = list.map(rowHtml).join('') || '<tr><td colspan="9">No discs</td></tr>';
+      status('Loaded '+list.length+' disc(s).');
+    }
+    async function addDisc(){
+      const payload = {
+        discType: $('#discType').value.trim(),
+        discColor: $('#discColor').value.trim(),
+        ownerName: $('#ownerName').value.trim(),
+        phoneNumber: $('#phoneNumber').value.trim(),
+        binNumber: $('#binNumber').value? Number($('#binNumber').value): undefined
+      };
+      if(!payload.discType || !payload.discColor) return status('Type and Color required');
+      status('Adding disc...');
+      const res = await api('/api/discs',{ method:'POST', body: JSON.stringify(payload) });
+      if(!res.ok){ status('Add failed: '+res.status+' '+JSON.stringify(res.data)); return; }
+      status('Added disc ID '+ res.data.disc.id);
+      await load();
+    }
+    async function seed(){
+      status('Seeding (only if empty)...');
+      const r = await api('/api/debug/seed',{ method:'POST'});
+      status(r.data);
+      await load();
+    }
+    async function cleanup(){
+      status('Cleaning expired (older than 6 weeks, not returned)...');
+      const r = await api('/api/admin/discs/expired',{ method:'DELETE'});
+      status(r.data);
+      await load();
+    }
+    async function markReturned(id){
+      status('Marking returned '+id+'...');
+      await api('/api/admin/discs/'+id+'/return',{ method:'PATCH'});
+      await load();
+    }
+    async function del(id){
+      if(!confirm('Delete disc '+id+'?')) return;
+      status('Deleting '+id+'...');
+      await api('/api/admin/discs/'+id,{ method:'DELETE'});
+      await load();
+    }
+    document.addEventListener('click', e => {
+      const act = e.target.getAttribute('data-act');
+      if(act==='return') markReturned(e.target.getAttribute('data-id'));
+      if(act==='delete') del(e.target.getAttribute('data-id'));
+    });
+    $('#addBtn').onclick = addDisc;
+    $('#refreshBtn').onclick = load;
+    $('#seedBtn').onclick = seed;
+    $('#cleanupBtn').onclick = cleanup;
+    load();
+  </script>
+</body>
+</html>

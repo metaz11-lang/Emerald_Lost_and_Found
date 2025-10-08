@@ -52,6 +52,10 @@ app.use((req,res,next) => {
         }
         next();
 });
+// Simple fallback admin page
+app.get('/admin-basic', (req,res) => {
+        res.sendFile(path.resolve(__dirname, '..', 'public', 'admin-basic.html'));
+});
 
 // Basic rate limiter (tune for production needs)
 const loginLimiter = rateLimit({

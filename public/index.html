@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <!-- Import map to redirect server-only/bare imports to lightweight browser shims -->
+    <script type="importmap">
+    {
+      "imports": {
+        "drizzle-orm/pg-core": "/shims/drizzle-orm-pg-core.js",
+        "drizzle-zod": "/shims/drizzle-zod.js",
+        "zod": "/shims/zod.js"
+      }
+    }
+    </script>
+    <!-- Small diagnostics helper: log load and surface uncaught errors to the page for easier debugging -->
+    <script>
+      try {
+        console.log('[emerald] index.html loaded');
+        // Create a small overlay to show uncaught errors so the user can paste it here easily
+        const overlay = document.createElement('div');
+        overlay.id = 'emerald-error-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.left = '12px';
+        overlay.style.right = '12px';
+        overlay.style.top = '12px';
+        overlay.style.zIndex = 9999999;
+        overlay.style.background = 'rgba(255,255,255,0.95)';
+        overlay.style.color = '#b91c1c';
+        overlay.style.border = '1px solid rgba(185,28,28,0.2)';
+        overlay.style.padding = '12px';
+        overlay.style.fontFamily = 'system-ui,Segoe UI,Roboto,Arial';
+        overlay.style.fontSize = '13px';
+        overlay.style.maxHeight = '60vh';
+        overlay.style.overflow = 'auto';
+        overlay.style.display = 'none';
+        document.addEventListener('DOMContentLoaded', () => document.body.appendChild(overlay));
+
+        function showError(msg) {
+          console.error('[emerald] runtime error:', msg);
+          overlay.style.display = 'block';
+          overlay.textContent = typeof msg === 'string' ? msg : (msg && msg.stack) ? msg.stack : JSON.stringify(msg);
+        }
+
+        window.addEventListener('error', (ev) => {
+          showError(ev.error || ev.message || 'Unknown error');
+        });
+        window.addEventListener('unhandledrejection', (ev) => {
+          showError(ev.reason || 'Unhandled rejection');
+        });
+      } catch (e) {
+        try { console.error(e); } catch {};
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-3b3d0452.js"></script>
+    <link rel="stylesheet" href="/assets/index-7f6cc192.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>

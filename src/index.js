@@ -272,6 +272,11 @@ app.get('/healthz', (req, res) => {
         res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// JSON 404 for any unmatched /api/ path (must be before SPA catch-all)
+app.use('/api', (req,res) => {
+        res.status(404).json({ error: 'Not found', path: req.originalUrl });
+});
+
 // For single-page-app routing, always return index.html for unknown GET routes
 // Use a regex catch-all for GET routes to avoid path-to-regexp parameter parsing issues
 app.get(/.*/, (req, res) => {

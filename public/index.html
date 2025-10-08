@@ -48,6 +48,24 @@
         window.addEventListener('unhandledrejection', (ev) => {
           showError(ev.reason || 'Unhandled rejection');
         });
+
+        // Patch fetch to observe disc creation responses and fire events the bundle could optionally listen for.
+        const originalFetch = window.fetch;
+        window.fetch = async function patchedFetch(input, init) {
+          try {
+            const res = await originalFetch(input, init);
+            // Detect successful disc creation
+            const url = (typeof input === 'string' ? input : input.url || '').toLowerCase();
+            if (url.includes('/api/discs') && init && (init.method||'').toUpperCase() === 'POST' && res.ok) {
+              console.log('[emerald][debug] POST /api/discs success -> dispatching discCreated event');
+              try { window.dispatchEvent(new CustomEvent('discCreated')); } catch {}
+            }
+            return res;
+          } catch (e) {
+            console.error('[emerald][debug] fetch error', e);
+            throw e;
+          }
+        };
       } catch (e) {
         try { console.error(e); } catch {};
       }

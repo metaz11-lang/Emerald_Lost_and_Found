@@ -45,6 +45,14 @@ function basicDiscView(row) {
 app.use(express.json());
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] }));
 
+// Fail-safe: ensure /admin and nested admin routes always serve SPA index BEFORE static 404s
+app.use((req,res,next) => {
+        if (req.method === 'GET' && (req.path === '/admin' || req.path.startsWith('/admin/'))) {
+                return res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
+        }
+        next();
+});
+
 // Basic rate limiter (tune for production needs)
 const loginLimiter = rateLimit({
         windowMs: 15 * 60 * 1000,
@@ -281,6 +289,21 @@ app.get('/api/debug/info', (req,res) => {
                 });
         } catch (e) {
                 res.status(500).json({ error: 'Debug info failed', details: String(e) });
+        }
+});
+
+// Debug: list registered top-level GET routes
+app.get('/api/debug/routes', (req,res) => {
+        try {
+                const routes = [];
+                app._router.stack.forEach(layer => {
+                        if (!layer.route || !layer.route.path) return;
+                        const methods = Object.keys(layer.route.methods).filter(m => layer.route.methods[m]);
+                        if (methods.includes('get')) routes.push(layer.route.path.toString());
+                });
+                res.json({ success:true, routes });
+        } catch (e) {
+                res.status(500).json({ error: 'Route list failed', details:String(e) });
         }
 });
 

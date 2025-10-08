@@ -53,23 +53,21 @@
         const originalFetch = window.fetch;
         window.fetch = async function patchedFetch(input, init) {
           try {
+            let url = (typeof input === 'string' ? input : input.url || '');
+            const method = (init && init.method ? init.method : 'GET').toUpperCase();
+            if (url.startsWith('/api/admin/discs') && method === 'GET') {
+              // Proactive redirect so React admin uses public list
+              const qp = url.includes('?') ? url.slice(url.indexOf('?')) : '';
+              console.log('[emerald][patch] redirecting', url, '-> /api/discs'+qp);
+              input = '/api/discs'+qp;
+              url = input;
+            }
             const res = await originalFetch(input, init);
             // Detect successful disc creation
-            const url = (typeof input === 'string' ? input : input.url || '').toLowerCase();
-            if (url.includes('/api/discs') && init && (init.method||'').toUpperCase() === 'POST' && res.ok) {
+            const low = url.toLowerCase();
+            if (low.includes('/api/discs') && init && (init.method||'').toUpperCase() === 'POST' && res.ok) {
               console.log('[emerald][debug] POST /api/discs success -> dispatching discCreated event');
               try { window.dispatchEvent(new CustomEvent('discCreated')); } catch {}
-            }
-            // Fallback for admin list: if /api/admin/discs 404s, try public /api/discs instead
-            if (url.includes('/api/admin/discs') && res.status === 404 && (!init || (init.method||'GET').toUpperCase()==='GET')) {
-              console.log('[emerald][debug] /api/admin/discs returned 404, falling back to /api/discs');
-              try {
-                const alt = await originalFetch('/api/discs', { headers: { 'Accept':'application/json' } });
-                // Construct a Response-like object with alt body but original status if alt ok
-                if (alt.ok) return alt; // let caller treat it as success
-              } catch (e) {
-                console.warn('[emerald][debug] fallback /api/discs failed', e);
-              }
             }
             return res;
           } catch (e) {

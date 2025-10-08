@@ -95,7 +95,11 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
         try {
                 const { username, password } = req.body || {};
                 if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-                        return res.json({ success: true, message: 'Login successful' });
+                        // Set a very simple session cookie so the React admin (which uses credentials:'include') treats user as logged in
+                        try {
+                                res.setHeader('Set-Cookie', 'emeraldSession=ok; Path=/; HttpOnly');
+                        } catch {}
+                        return res.json({ success: true, message: 'Login successful', session: 'ok' });
                 }
                 return res.status(401).json({ error: 'Invalid credentials' });
         } catch (err) {

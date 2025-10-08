@@ -89,6 +89,22 @@
     </script>
     <script type="module" crossorigin src="/assets/index-3b3d0452.js"></script>
     <link rel="stylesheet" href="/assets/index-7f6cc192.css">
+    <script>
+      // Show disc count early so user sees data exists even if React UI does not render it
+      (async function(){
+        try {
+          const r = await fetch('/api/discs');
+          if(!r.ok) return;
+          const list = await r.json();
+          const tag = document.createElement('div');
+          tag.style.position='fixed';tag.style.bottom='8px';tag.style.left='50%';tag.style.transform='translateX(-50%)';
+          tag.style.background='#0f172a';tag.style.color='#fff';tag.style.padding='4px 10px';tag.style.borderRadius='14px';tag.style.font='12px system-ui,Segoe UI';tag.style.zIndex=9999998;
+          tag.textContent='Discs in DB: '+list.length;
+          document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(tag));
+          setTimeout(()=>tag.remove(),8000);
+        } catch {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

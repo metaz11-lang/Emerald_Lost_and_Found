@@ -267,6 +267,23 @@ app.post('/api/debug/seed', (req,res) => {
         }
 });
 
+// Debug: show db info
+app.get('/api/debug/info', (req,res) => {
+        try {
+                const stats = db.stats.get();
+                res.json({
+                        success: true,
+                        dbFile: require('path').resolve(require('./db').raw.name || 'unknown'),
+                        total: stats.total || 0,
+                        returned: stats.returned || 0,
+                        oldDiscs: stats.oldDiscs || 0,
+                        now: new Date().toISOString()
+                });
+        } catch (e) {
+                res.status(500).json({ error: 'Debug info failed', details: String(e) });
+        }
+});
+
 // Health / readiness endpoint for load balancers & uptime checks
 app.get('/healthz', (req, res) => {
         res.json({ status: 'ok', time: new Date().toISOString() });

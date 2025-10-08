@@ -1,24 +1,32 @@
 // Lightweight shim for drizzle-zod used to avoid runtime import errors in the browser.
 // Provide chainable schema helpers used by the client bundle: omit, extend, partial, pick.
 
-function makeFluent(base){
-	return new Proxy(base, {
-		get(target, prop){
+// Stable chainable schema shim for drizzle-zod.
+// Provides the methods used in the bundle (omit, extend, partial, pick, default) and
+// gracefully absorbs any additional chained method names without throwing.
+
+function makeSchema(init = {}) {
+	const base = { __drizzleZodShim: true, ...init };
+	const self = new Proxy(base, {
+		get(_t, prop) {
 			if (prop === '__isDrizzleZodShim') return true;
-			if (!(prop in target)) {
-				target[prop] = () => proxy; // define lazily
+			// Known chainable methods
+			if (['omit','extend','partial','pick','default','shape','merge','required','optional'].includes(prop)) {
+				return () => self;
 			}
-			const val = target[prop];
-			if (typeof val === 'function') return (..._args) => proxy;
-			return proxy;
-		}
+			// parse / safeParse return predictable shapes
+			if (prop === 'parse') return (v) => v;
+			if (prop === 'safeParse') return (v) => ({ success: true, data: v });
+			// Any unknown property returns self to keep chains intact
+			return self;
+		},
+		apply() { return self; }
 	});
-	function proxy() { return proxy; }
+	return self;
 }
 
-function makeSchema(obj = {}){
-	return makeFluent({ ...obj });
-}
+export const createInsertSchema = (table, _opts) => makeSchema({ table });
+export const createUpdateSchema = (table, _opts) => makeSchema({ table });
+export const createSelectSchema = (table, _opts) => makeSchema({ table });
 
-export const createInsertSchema = (_table, _opts) => makeSchema({ table: _table });
-export default { createInsertSchema };
+export default { createInsertSchema, createUpdateSchema, createSelectSchema };

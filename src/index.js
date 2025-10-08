@@ -45,15 +45,17 @@ function basicDiscView(row) {
 app.use(express.json());
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] }));
 
-// Fail-safe: ensure /admin and nested admin routes always serve SPA index BEFORE static 404s
+// Fail-safe: ensure /admin and nested admin routes always serve admin.html BEFORE static 404s
 app.use((req,res,next) => {
-        if (req.method === 'GET' && req.path === '/admin') {
+        if (req.method === 'GET' && (req.path === '/admin' || req.path === '/admin/')) {
+                console.log('[route] serving admin.html (middleware exact)', req.originalUrl);
                 return res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
         }
         if (req.method === 'GET' && req.path.startsWith('/admin/')) {
+                console.log('[route] serving admin.html (middleware nested)', req.originalUrl);
                 return res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
         }
-        next();
+        return next();
 });
 // Simple fallback admin page
 app.get('/admin-basic', (req,res) => {
@@ -376,12 +378,19 @@ app.get('/healthz', (req, res) => {
         res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// Explicit admin SPA route (exact) and regex for deeper admin paths
+// Explicit admin SPA routes (secondary safety net) - log if hit (should be rare now)
 app.get('/admin', (req,res) => {
-        res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
+        console.log('[route-fallback] explicit /admin hit, sending admin.html');
+        res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
 });
 app.get(/^\/admin\//, (req,res) => {
-        res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
+        console.log('[route-fallback] explicit /admin/* hit, sending admin.html');
+        res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
+});
+
+// Debug endpoint to confirm server sees /admin when queried
+app.get('/api/debug/admin-route-test', (req,res) => {
+        res.json({ ok:true, note:'Admin route test endpoint reachable', time:Date.now() });
 });
 
 // JSON 404 for any unmatched /api/ path (must be before SPA catch-all)

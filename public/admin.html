@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Emerald Admin</title>
+    <!-- Reuse main index head pieces by loading same bundle -->
+    <script type="importmap">
+    {
+      "imports": {
+        "drizzle-orm/pg-core": "/shims/drizzle-orm-pg-core.js",
+        "drizzle-zod": "/shims/drizzle-zod.js",
+        "zod": "/shims/zod.js"
+      }
+    }
+    </script>
+    <script>
+      // Minimal redirect safety: if loaded at /admin.html ensure location shows /admin for consistency
+      if (location.pathname.endsWith('/admin.html')) {
+        history.replaceState({}, '', '/admin');
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-3b3d0452.js"></script>
+    <link rel="stylesheet" href="/assets/index-7f6cc192.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

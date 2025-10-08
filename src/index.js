@@ -47,8 +47,11 @@ app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIO
 
 // Fail-safe: ensure /admin and nested admin routes always serve SPA index BEFORE static 404s
 app.use((req,res,next) => {
-        if (req.method === 'GET' && (req.path === '/admin' || req.path.startsWith('/admin/'))) {
-                return res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
+        if (req.method === 'GET' && req.path === '/admin') {
+                return res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
+        }
+        if (req.method === 'GET' && req.path.startsWith('/admin/')) {
+                return res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
         }
         next();
 });

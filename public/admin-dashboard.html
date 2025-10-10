@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Emerald Disc Golf Park Lost & Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #4CAF50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .discs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            min-width: 1000px;
+        }
+        
+        .discs-table th,
+        .discs-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
+        }
+        
+        .discs-table th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }
+        
+        .discs-table td:nth-child(4),
+        .discs-table th:nth-child(4) {
+            max-width: 200px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        
+        .action-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+        
+        .action-btn:hover {
+            background: #c0392b;
+        }
+        
+        .edit-btn {
+            background: #f39c12;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+        
+        .edit-btn:hover {
+            background: #e67e22;
+        }
+        
+        .returned-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+        
+        .returned-btn:hover {
+            background: #229954;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 4px;
+            min-width: 180px;
+        }
+        
+        .add-disc-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .add-disc-btn:hover {
+            background: #45a049;
+        }
+        
+        .add-disc-form {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-submit {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn-submit:hover {
+            background: #45a049;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .text-preview-section {
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .text-preview-section h3 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .disc-selector {
+            margin-bottom: 15px;
+        }
+        
+        .disc-selector select {
+            padding: 8px 12px;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            font-size: 1rem;
+            background: white;
+        }
+        
+        .text-content {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: #333;
+            min-height: 200px;
+        }
+        
+        .text-placeholder {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .send-text-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        
+        .send-text-btn:hover {
+            background: #1976D2;
+        }
+        
+        .send-text-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Admin Dashboard</h1>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>Total Lost Discs</h2>
+                <div class="stat-number" id="total-discs">-</div>
+            </div>
+            
+            <div class="card">
+                <h2>Recent Additions</h2>
+                <div class="stat-number" id="recent-discs">-</div>
+                <small>Last 7 days</small>
+            </div>
+            
+            <div class="card">
+                <h2>Auto Cleanup</h2>
+                <p style="margin-bottom: 10px; font-size: 0.9rem; color: #666;">
+                    Discs older than 6 weeks are automatically marked as returned every hour.
+                </p>
+                <button class="add-disc-btn" onclick="manualCleanup()" style="font-size: 0.9rem; padding: 8px 16px;">
+                    Run Cleanup Now
+                </button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Manage Lost Discs</h2>
+            
+            <div class="add-disc-form" id="add-disc-form" style="display: none;">
+                <h3>Add New Lost Disc</h3>
+                <form id="disc-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="owner-name">Name:</label>
+                            <input type="text" id="owner-name" name="owner-name" placeholder="Owner's name (optional)" oninput="updateFormTextPreview()">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone-number">Phone Number: *</label>
+                            <input type="tel" id="phone-number" name="phone-number" placeholder="480-555-1234" required oninput="updateFormTextPreview()">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="disc-type">Disc: *</label>
+                            <input type="text" id="disc-type" name="disc-type" placeholder="e.g., Innova Champion Destroyer" required oninput="updateFormTextPreview()">
+                        </div>
+                        <div class="form-group">
+                            <label for="disc-color">Color: *</label>
+                            <input type="text" id="disc-color" name="disc-color" placeholder="e.g., Blue, Red, Orange" required oninput="updateFormTextPreview()">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bin-number">Bin:</label>
+                            <select id="bin-number" name="bin-number">
+                                <option value="">Select Bin (optional)</option>
+                                <option value="1">Bin 1</option>
+                                <option value="2">Bin 2</option>
+                                <option value="3">Bin 3</option>
+                                <option value="4">Bin 4</option>
+                                <option value="5">Bin 5</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">Add Disc</button>
+                        <button type="button" class="btn-cancel" onclick="toggleAddForm()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <button class="add-disc-btn" id="add-disc-btn" onclick="toggleAddForm()">Add New Disc</button>
+            
+            <div class="text-preview-section">
+                <h3>📱 Text Message Preview</h3>
+                <p style="margin-bottom: 15px; color: #666; font-size: 0.9rem;">
+                    Fill out the form above to see the text message that will be sent:
+                </p>
+                <div class="text-content" id="text-preview">
+                    <span class="text-placeholder">Fill out the Name, Disc, and Color fields above to preview the text message.</span>
+                </div>
+                <button class="send-text-btn" id="send-text-btn" onclick="sendTextMessage()" disabled>
+                    Send Text Message (Coming Soon)
+                </button>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="discs-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Disc</th>
+                            <th>Color</th>
+                            <th>Bin</th>
+                            <th>Date Found</th>
+                            <th>Weeks in Inventory</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-discs-tbody">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = '/admin';
+                return false;
+            }
+            return true;
+        }
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin';
+        }
+        
+        // Load dashboard data
+        async function loadDashboardData() {
+            if (!checkAuth()) return;
+            
+            try {
+                const response = await fetch('/api/admin/discs', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+                
+                const discs = await response.json();
+                
+                // Update stats
+                document.getElementById('total-discs').textContent = discs.length;
+                
+                // Calculate recent additions (last 7 days)
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const recentDiscs = discs.filter(disc => new Date(disc.created_at) > sevenDaysAgo);
+                document.getElementById('recent-discs').textContent = recentDiscs.length;
+                
+                // Load table data
+                loadTableData(discs);
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        
+        // Load table data
+        function loadTableData(discs) {
+            const tbody = document.getElementById('admin-discs-tbody');
+            tbody.innerHTML = '';
+            
+            discs.forEach(disc => {
+                // Calculate weeks in inventory
+                const dateFound = new Date(disc.date_found);
+                const today = new Date();
+                const timeDiff = today.getTime() - dateFound.getTime();
+                const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                const weeksDiff = Math.floor(daysDiff / 7);
+                const weeksDisplay = weeksDiff === 0 ? '< 1' : weeksDiff.toString();
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${disc.id}</td>
+                    <td>${disc.owner_name || 'Unknown'}</td>
+                    <td>${disc.phone_number}</td>
+                    <td>${disc.disc_type}</td>
+                    <td>${disc.disc_color}</td>
+                    <td>Bin ${disc.bin_number || 'N/A'}</td>
+                    <td>${new Date(disc.date_found).toLocaleDateString()}</td>
+                    <td style="text-align: center; ${weeksDiff >= 6 ? 'color: #e74c3c; font-weight: bold;' : weeksDiff >= 4 ? 'color: #f39c12; font-weight: bold;' : ''}">${weeksDisplay}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="edit-btn" onclick="editDisc(${disc.id})">Edit</button>
+                            <button class="returned-btn" onclick="markAsReturned(${disc.id})">Returned</button>
+                            <button class="action-btn" onclick="deleteDisc(${disc.id})">Delete</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Store discs data globally
+            window.discsData = discs;
+        }
+        
+        // Delete disc function
+        async function deleteDisc(discId) {
+            if (!confirm('Are you sure you want to delete this disc?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/discs/${discId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    loadDashboardData(); // Reload data
+                    alert('Disc deleted successfully');
+                } else {
+                    alert('Error deleting disc');
+                }
+            } catch (error) {
+                console.error('Error deleting disc:', error);
+                alert('Error deleting disc');
+            }
+        }
+        
+        // Edit disc function
+        function editDisc(discId) {
+            const disc = window.discsData.find(d => d.id === discId);
+            if (!disc) {
+                alert('Disc not found');
+                return;
+            }
+            
+            // Show the add form with populated data
+            toggleAddForm();
+            
+            // Populate the form with existing data
+            document.getElementById('owner-name').value = disc.owner_name || '';
+            document.getElementById('phone-number').value = disc.phone_number;
+            document.getElementById('disc-type').value = disc.disc_type;
+            document.getElementById('disc-color').value = disc.disc_color;
+            document.getElementById('bin-number').value = disc.bin_number || '';
+            
+            // Update the text preview
+            updateFormTextPreview();
+            
+            // Change the form to edit mode
+            const form = document.getElementById('disc-form');
+            const submitBtn = form.querySelector('.btn-submit');
+            submitBtn.textContent = 'Update Disc';
+            
+            // Store the disc ID for updating
+            form.dataset.editId = discId;
+        }
+        
+        // Mark disc as returned function
+        async function markAsReturned(discId) {
+            try {
+                const response = await fetch(`/api/admin/discs/${discId}/returned`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    loadDashboardData(); // Reload data
+                } else {
+                    alert('Error marking disc as returned');
+                }
+            } catch (error) {
+                console.error('Error marking disc as returned:', error);
+                alert('Error marking disc as returned');
+            }
+        }
+        
+        // Manual cleanup function
+        async function manualCleanup() {
+            if (!confirm('This will mark all discs older than 6 weeks as returned. Continue?')) return;
+            
+            try {
+                const response = await fetch('/api/admin/cleanup', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Cleanup completed: ${result.discsProcessed} disc(s) marked as returned`);
+                    loadDashboardData(); // Reload data
+                } else {
+                    alert('Error running cleanup');
+                }
+            } catch (error) {
+                console.error('Error running cleanup:', error);
+                alert('Error running cleanup');
+            }
+        }
+        
+        // Update text preview based on form input
+        function updateFormTextPreview() {
+            const preview = document.getElementById('text-preview');
+            const sendBtn = document.getElementById('send-text-btn');
+            
+            // Get form values
+            const name = document.getElementById('owner-name').value.trim() || '[Name]';
+            const phoneNumber = document.getElementById('phone-number').value.trim();
+            const discType = document.getElementById('disc-type').value.trim() || '[Disc Mold]';
+            const discColor = document.getElementById('disc-color').value.trim() || '[Color]';
+            
+            // Check if we have enough info to enable send button
+            const hasRequiredFields = phoneNumber && discType !== '[Disc Mold]' && discColor !== '[Color]';
+            sendBtn.disabled = !hasRequiredFields;
+            
+            // Generate the text message
+            const displayName = name === '[Name]' ? 'Disc Owner' : name;
+            
+            const textMessage = `${displayName}, I have your ${discColor} ${discType} disc.
+As a reminder, there is a $3 recovery fee which we use to pay the home owners so they continue to give our discs back.
+I am usually available to meet at Emerald Park after 4PM on most week days.
+I will hold named discs for 6 weeks, then I will turn them into Spinners where they will be listed to be claimed from them.
+Visit EDGP Lost and Found at https://emerald-discs.replit.app/ to see if we have any more of your lost discs.
+Find us on Facebook at https://www.facebook.com/EdgcLostAndFound
+Dave
+Emerald Disc Golf Park Lost and Found`;
+            
+            preview.textContent = textMessage;
+            
+            // If no fields are filled, show placeholder
+            if (!name && !phoneNumber && !discType && !discColor) {
+                preview.innerHTML = '<span class="text-placeholder">Fill out the Name, Disc, and Color fields above to preview the text message.</span>';
+                sendBtn.disabled = true;
+            }
+        }
+        
+        // Send text message function (placeholder for future SMS integration)
+        function sendTextMessage() {
+            const phoneNumber = document.getElementById('phone-number').value.trim();
+            const discType = document.getElementById('disc-type').value.trim();
+            const discColor = document.getElementById('disc-color').value.trim();
+            
+            if (!phoneNumber || !discType || !discColor) {
+                alert('Please fill in all required fields (Phone Number, Disc, and Color) first.');
+                return;
+            }
+            
+            // For now, just show an alert with the phone number
+            alert(`Text message would be sent to: ${phoneNumber}\n\nThis feature will be connected to an SMS service in the future.`);
+        }
+        
+        // Toggle add disc form
+        function toggleAddForm() {
+            const form = document.getElementById('add-disc-form');
+            const button = document.getElementById('add-disc-btn');
+            const submitBtn = form.querySelector('.btn-submit');
+            
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+                button.style.display = 'none';
+                // Clear form and reset text preview
+                document.getElementById('disc-form').reset();
+                updateFormTextPreview();
+            } else {
+                form.style.display = 'none';
+                button.style.display = 'block';
+                // Reset form to add mode
+                form.dataset.editId = '';
+                submitBtn.textContent = 'Add Disc';
+                // Reset text preview
+                const preview = document.getElementById('text-preview');
+                preview.innerHTML = '<span class="text-placeholder">Fill out the Name, Disc, and Color fields above to preview the text message.</span>';
+                document.getElementById('send-text-btn').disabled = true;
+            }
+        }
+        
+        // Handle form submission
+        async function handleDiscSubmission(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const isEdit = form.dataset.editId;
+            
+            const formData = {
+                owner_name: document.getElementById('owner-name').value.trim() || null,
+                phone_number: document.getElementById('phone-number').value.trim(),
+                disc_type: document.getElementById('disc-type').value.trim(),
+                disc_color: document.getElementById('disc-color').value.trim(),
+                bin_number: document.getElementById('bin-number').value || null
+            };
+            
+            // Validate required fields
+            if (!formData.phone_number || !formData.disc_type || !formData.disc_color) {
+                alert('Please fill in all required fields (Phone Number, Disc, Color)');
+                return;
+            }
+            
+            try {
+                let response;
+                if (isEdit) {
+                    // Update existing disc
+                    response = await fetch(`/api/admin/discs/${isEdit}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    // Add new disc
+                    response = await fetch('/api/discs', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Reset form to add mode
+                    form.dataset.editId = '';
+                    form.querySelector('.btn-submit').textContent = 'Add Disc';
+                    
+                    toggleAddForm(); // Hide form
+                    loadDashboardData(); // Reload data
+                } else {
+                    const action = isEdit ? 'updating' : 'adding';
+                    alert(`Error ${action} disc: ` + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                const action = isEdit ? 'updating' : 'adding';
+                console.error(`Error ${action} disc:`, error);
+                alert(`Error ${action} disc. Please try again.`);
+            }
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuth()) {
+                loadDashboardData();
+                
+                // Set up form submission handler
+                document.getElementById('disc-form').addEventListener('submit', handleDiscSubmission);
+            }
+        });
+    </script>
+</body>
+</html>

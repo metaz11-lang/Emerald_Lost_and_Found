@@ -1,86 +1,49 @@
-# Emerald Lost and Found
+# Emerald Disc Golf Park - Lost & Found
 
-This repository contains a static-built React app in `public/` and a minimal Express server in `src/index.js` that serves the app.
+A professional web application for managing lost and found discs at Emerald Disc Golf Park.
 
-Quick start (Windows / PowerShell):
+## Features
 
-1. Install dependencies:
+- **Public Search Interface**: Players can search by name or disc type to find their lost discs
+- **Admin Dashboard**: Secure admin panel for disc management
+- **Automatic SMS Text Generation**: Preview text messages for disc owners
+- **6-Week Automatic Cleanup**: Automatically transfers old discs to Spinners
+- **Real-time Inventory Tracking**: Shows weeks in inventory with color-coded warnings
+- **Mobile-Friendly Interface**: Responsive design that works on all devices
+- **SQLite Database**: Simple, reliable data storage
 
-```powershell
-npm install
-```
-
-2. Run in development (auto-restarts on server file changes):
-
-```powershell
-npm run dev
-```
-
-3. Run production:
-
-```powershell
-npm start
-```
-
-The app will be available at http://localhost:3000 . The client contains an admin login form; for local/demo testing the credentials are:
-
+## Admin Access
 - Username: `admin`
 - Password: `emerald2024`
 
-Notes:
-- The repository currently includes browser shims under `public/shims/` to satisfy server-only imports that were present when the client was built. This is a development convenience. For a production-ready app you should rebuild the client so server-only modules are excluded or guarded at build time, and replace the demo login with a proper auth flow.
+## Deployment Ready
+This application is configured for easy deployment to cloud platforms like Render.com, Railway, or Heroku.
 
-## Deployment
+## Getting Started
 
-### Docker (recommended single-step deploy)
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Build image:
+2. Start the server:
+   ```bash
+   npm start
+   ```
 
+3. Visit `http://localhost:3000` to use the application
+
+## Development
+
+For development with auto-restart:
 ```bash
-docker build -t emerald-lost-and-found:latest .
+npm run dev
 ```
 
-Run container (mapping host port 8080 -> container 3000):
+## Database
 
-```bash
-docker run -p 8080:3000 --env-file .env --name emerald emerald-lost-and-found:latest
-```
+The application uses SQLite for data storage. The database file (`database.sqlite`) will be created automatically when you first run the server.
 
-Visit: http://localhost:8080
+## Contact
 
-Override admin credential (example):
-
-```bash
-docker run -p 8080:3000 -e ADMIN_USERNAME=owner -e ADMIN_PASSWORD='ReplaceMe!' emerald-lost-and-found:latest
-```
-
-### Render / Railway / Fly.io / Heroku
-All of these detect a Node app automatically.
-
-1. Push this repository to GitHub.
-2. Create a new web service on the platform.
-3. Set build command: (leave empty – no build step required unless you later reintroduce a client build)
-4. Set start command: `npm start`
-5. Add environment variables (at minimum): `PORT`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`.
-6. Deploy.
-
-### Static + Server split (optional future improvement)
-If you later rebuild the client from original TypeScript sources:
-1. Move source under `client/`, run Vite build -> outputs to `public/`.
-2. Keep Express only for API + static serving (or host static assets on a CDN / Netlify and expose an API separately).
-
-### Hardening Checklist (do before real users)
-- Replace demo admin login with proper authentication (session or JWT + hashed password storage).
-- Rebuild client and remove runtime shims.
-- Enable Helmet CSP (remove `contentSecurityPolicy: false`) and add hashes/nonces for inline scripts (or externalize them).
-- Add rate limiting (e.g., `express-rate-limit`) to `/api/admin/login`.
-- Add persistent logging & monitoring (e.g., to stdout -> platform logs, plus health checks hitting `/healthz`).
-- Add error boundary UI on client.
-- Add real database (PostgreSQL/SQLite) for items & users.
-
-### Health Check
-Deployed services can use: `GET /healthz` (returns `{ status: 'ok' }`).
-
----
-Feel free to ask for help implementing the real auth/database or removing shims—just let me know the direction you want next.
-
+For questions about lost discs, text: **480.285.8848**

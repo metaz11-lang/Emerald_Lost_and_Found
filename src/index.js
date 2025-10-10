@@ -101,7 +101,17 @@ app.use(helmet({
 // Simple request logger for development
 app.use((req, res, next) => {
         console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+        if (req.method === 'POST' && req.url === '/api/discs') {
+                console.log('[FORM_DEBUG] POST /api/discs detected - body:', JSON.stringify(req.body));
+                console.log('[FORM_DEBUG] Headers:', JSON.stringify(req.headers));
+        }
         next();
+});
+
+// Debug endpoint to test if React form can reach server
+app.post('/api/debug/form-test', (req, res) => {
+        console.log('[FORM_TEST] Received test request:', JSON.stringify(req.body));
+        res.json({ success: true, message: 'Form test successful', received: req.body });
 });
 
 // Gracefully handle JSON parse errors and return JSON instead of HTML
@@ -131,6 +141,17 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
         } catch (err) {
                 console.error('Admin login error', err);
                 return res.status(500).json({ error: 'Login failed' });
+        }
+});
+
+// Admin logout endpoint
+app.post('/api/admin/logout', (req, res) => {
+        try {
+                res.clearCookie('emeraldSession');
+                res.json({ success: true, message: 'Logged out successfully' });
+        } catch (err) {
+                console.error('Admin logout error', err);
+                return res.status(500).json({ error: 'Logout failed' });
         }
 });
 
@@ -255,11 +276,19 @@ app.get('/api/discs', (req,res) => {
         }
 });
 
-// Admin auth middleware (simple header-based since we have no sessions)
+// Admin auth middleware (simple cookie-based authentication)
 function requireAdmin(req,res,next){
-        // In original app likely cookie/session; here we accept basic header for simplicity
-        // Client currently only relies on login success to show admin UI; we'll skip strict enforcement
-        return next();
+        // Check for admin session cookie
+        const adminSession = req.cookies?.emeraldSession;
+        if (adminSession === 'ok') {
+                return next();
+        }
+        
+        // If no valid session, return 401 Unauthorized
+        return res.status(401).json({ 
+                error: 'Admin authentication required', 
+                message: 'Please log in to access admin features' 
+        });
 }
 
 // Admin: stats
@@ -407,12 +436,26 @@ app.get('/healthz', (req, res) => {
 
 // Explicit admin SPA routes (secondary safety net) - log if hit (should be rare now)
 app.get('/admin', (req,res) => {
-        console.log('[route-fallback] explicit /admin hit, sending admin.html');
-        res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
+        // Check if user is authenticated
+        const adminSession = req.cookies?.emeraldSession;
+        if (adminSession === 'ok') {
+                console.log('[route-fallback] explicit /admin hit, user authenticated, sending admin-basic.html');
+                res.sendFile(path.resolve(__dirname, '..', 'public', 'admin-basic.html'));
+        } else {
+                console.log('[route-fallback] explicit /admin hit, user not authenticated, redirecting to login');
+                res.sendFile(path.resolve(__dirname, '..', 'public', 'admin-login.html'));
+        }
 });
 app.get(/^\/admin\//, (req,res) => {
-        console.log('[route-fallback] explicit /admin/* hit, sending admin.html');
-        res.sendFile(path.resolve(__dirname, '..', 'public', 'admin.html'));
+        // Check if user is authenticated
+        const adminSession = req.cookies?.emeraldSession;
+        if (adminSession === 'ok') {
+                console.log('[route-fallback] explicit /admin/* hit, user authenticated, sending admin-basic.html');
+                res.sendFile(path.resolve(__dirname, '..', 'public', 'admin-basic.html'));
+        } else {
+                console.log('[route-fallback] explicit /admin/* hit, user not authenticated, redirecting to login');
+                res.sendFile(path.resolve(__dirname, '..', 'public', 'admin-login.html'));
+        }
 });
 
 // Debug endpoint to confirm server sees /admin when queried

@@ -1,7 +1,22 @@
+# Dependencies
 node_modules/
-.env
-.DS_Store
-dist/
+
+# Database (will be created automatically)
+database.sqlite
 data.sqlite
 data/*.sqlite
 data/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Distribution
+dist/

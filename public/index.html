@@ -1,154 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <!-- Import map to redirect server-only/bare imports to lightweight browser shims -->
-    <script type="importmap">
-    {
-      "imports": {
-        "drizzle-orm/pg-core": "/shims/drizzle-orm-pg-core.js",
-        "drizzle-zod": "/shims/drizzle-zod.js",
-        "zod": "/shims/zod.js"
-      }
-    }
-    </script>
-    <!-- Small diagnostics helper: log load and surface uncaught errors to the page for easier debugging -->
-    <script>
-      try {
-        console.log('[emerald] index.html loaded');
-        // Create a small overlay to show uncaught errors so the user can paste it here easily
-        const overlay = document.createElement('div');
-        overlay.id = 'emerald-error-overlay';
-        overlay.style.position = 'fixed';
-        overlay.style.left = '12px';
-        overlay.style.right = '12px';
-        overlay.style.top = '12px';
-        overlay.style.zIndex = 9999999;
-        overlay.style.background = 'rgba(255,255,255,0.95)';
-        overlay.style.color = '#b91c1c';
-        overlay.style.border = '1px solid rgba(185,28,28,0.2)';
-        overlay.style.padding = '12px';
-        overlay.style.fontFamily = 'system-ui,Segoe UI,Roboto,Arial';
-        overlay.style.fontSize = '13px';
-        overlay.style.maxHeight = '60vh';
-        overlay.style.overflow = 'auto';
-        overlay.style.display = 'none';
-        document.addEventListener('DOMContentLoaded', () => document.body.appendChild(overlay));
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emerald Disc Golf Park Lost & Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: url('disc_golf_sunset.jpg') no-repeat center center fixed;
+            background-size: 100% auto;
+            background-clip: content-box;
+            padding-top: 1.5in;
+            padding-bottom: 1.5in;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-sizing: border-box;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: -1;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 600;
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+            z-index: 1;
+            position: relative;
+            margin-bottom: 2in;
+        }
+        
+        .tagline {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 1.5rem;
+            font-style: italic;
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+            z-index: 1;
+            position: relative;
+            font-weight: 300;
+        }
+        
+        .contact-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            z-index: 2;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        .contact-info h3 {
+            margin-bottom: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .admin-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            z-index: 2;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .admin-button:hover {
+            background: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 3rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 1000px;
+            width: 90%;
+            z-index: 2;
+            position: relative;
+        }
+        
+        .table-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        
+        .search-section {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .search-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            margin-top: 10px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .search-instructions {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .discs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        
+        .discs-table th,
+        .discs-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            color: #333;
+        }
+        
+        .discs-table th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .discs-table td {
+            font-size: 0.85rem;
+        }
+        
+        .discs-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .bin-number {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="contact-info">
+        <h3>Contact Us</h3>
+        <div>Facebook: Emerald Disc Golf Park Lost and Found</div>
+        <div>Texts at: 480.285.8848</div>
+    </div>
+    <a href="/admin" class="admin-button">Admin</a>
+    <h1>Emerald Disc Golf Park Lost & Found</h1>
+    <div class="tagline">"It looked good till it left your hand."</div>
+    
+    <div class="table-container">
+        <h2>Search for Lost Discs</h2>
+        <div class="search-section">
+            <input type="text" id="search-input" class="search-box" placeholder="Search by name or disc type...">
+            <div class="search-instructions">Type a name or disc type to search</div>
+        </div>
+        <table class="discs-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone Number</th>
+                    <th>Disc</th>
+                    <th>Color</th>
+                    <th>Bin</th>
+                    <th>Date Found</th>
+                </tr>
+            </thead>
+            <tbody id="discs-tbody">
+                <!-- Data will be loaded here -->
+            </tbody>
+        </table>
+    </div>
 
-        function showError(msg) {
-          console.error('[emerald] runtime error:', msg);
-          overlay.style.display = 'block';
-          overlay.textContent = typeof msg === 'string' ? msg : (msg && msg.stack) ? msg.stack : JSON.stringify(msg);
+    <script>
+        // Function to obscure phone number
+        function obscurePhoneNumber(phoneNumber) {
+            if (!phoneNumber) return 'N/A';
+            
+            // Remove all non-digit characters
+            const digits = phoneNumber.replace(/\D/g, '');
+            
+            // Handle different phone number formats
+            if (digits.length === 10) {
+                // Format: 4802558848 -> 480.###.8848
+                return `${digits.substring(0, 3)}.###.${digits.substring(6)}`;
+            } else if (digits.length === 11 && digits.startsWith('1')) {
+                // Format: 14802558848 -> 480.###.8848 (remove leading 1)
+                return `${digits.substring(1, 4)}.###.${digits.substring(7)}`;
+            } else {
+                // Fallback for other formats - show first 3 and last 4 digits
+                if (digits.length >= 7) {
+                    return `${digits.substring(0, 3)}.###.${digits.substring(digits.length - 4)}`;
+                } else {
+                    // If too short, just show ###
+                    return '###.###.####';
+                }
+            }
         }
 
-        window.addEventListener('error', (ev) => {
-          showError(ev.error || ev.message || 'Unknown error');
-        });
-        window.addEventListener('unhandledrejection', (ev) => {
-          showError(ev.reason || 'Unhandled rejection');
-        });
-
-        // Patch fetch to observe disc creation responses and fire events the bundle could optionally listen for.
-        const originalFetch = window.fetch;
-        window.fetch = async function patchedFetch(input, init) {
-          try {
-            let url = (typeof input === 'string' ? input : input.url || '');
-            const method = (init && init.method ? init.method : 'GET').toUpperCase();
-            if (url.startsWith('/api/admin/discs') && method === 'GET') {
-              // Proactive redirect so React admin uses public list
-              const qp = url.includes('?') ? url.slice(url.indexOf('?')) : '';
-              console.log('[emerald][patch] redirecting', url, '-> /api/discs'+qp);
-              input = '/api/discs'+qp;
-              url = input;
+        // Load disc data from API
+        async function loadDiscs(searchTerm = '') {
+            try {
+                const url = searchTerm ? `/api/discs?search=${encodeURIComponent(searchTerm)}` : '/api/discs';
+                const response = await fetch(url);
+                const discs = await response.json();
+                
+                const tbody = document.getElementById('discs-tbody');
+                tbody.innerHTML = '';
+                
+                if (discs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; font-style: italic;">No discs found</td></tr>';
+                    return;
+                }
+                
+                discs.forEach(disc => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${disc.owner_name || 'Unknown'}</td>
+                        <td>${obscurePhoneNumber(disc.phone_number)}</td>
+                        <td>${disc.disc_type}</td>
+                        <td>${disc.disc_color}</td>
+                        <td><span class="bin-number">Bin ${disc.bin_number || 'N/A'}</span></td>
+                        <td>${new Date(disc.date_found).toLocaleDateString()}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading discs:', error);
+                document.getElementById('discs-tbody').innerHTML = '<tr><td colspan="6">Error loading disc data</td></tr>';
             }
-            const res = await originalFetch(input, init);
-            // Detect successful disc creation
-            const low = url.toLowerCase();
-            if (low.includes('/api/discs') && init && (init.method||'').toUpperCase() === 'POST' && res.ok) {
-              console.log('[emerald][debug] POST /api/discs success -> dispatching discCreated event');
-              try { window.dispatchEvent(new CustomEvent('discCreated')); } catch {}
-            }
-            return res;
-          } catch (e) {
-            console.error('[emerald][debug] fetch error', e);
-            throw e;
-          }
-        };
-
-        // When a disc is created, force a refresh on /admin so new entries show immediately.
-        window.addEventListener('discCreated', () => {
-          if (location.pathname.startsWith('/admin')) {
-            console.log('[emerald][debug] auto-reloading admin view after discCreated');
-            location.reload();
-          }
+        }
+        
+        // Handle search input
+        function setupSearch() {
+            const searchInput = document.getElementById('search-input');
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', function() {
+                // Clear previous timeout
+                clearTimeout(searchTimeout);
+                
+                // Set new timeout to avoid too many API calls
+                searchTimeout = setTimeout(() => {
+                    const searchTerm = this.value.trim();
+                    loadDiscs(searchTerm);
+                }, 300);
+            });
+            
+            // Also search on Enter key
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(searchTimeout);
+                    const searchTerm = this.value.trim();
+                    loadDiscs(searchTerm);
+                }
+            });
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDiscs();
+            setupSearch();
         });
-      } catch (e) {
-        try { console.error(e); } catch {};
-      }
     </script>
-    <script type="module" crossorigin src="/assets/index-3b3d0452.js"></script>
-    <link rel="stylesheet" href="/assets/index-7f6cc192.css">
-    <script>
-      // Show disc count early so user sees data exists even if React UI does not render it
-      (async function(){
-        try {
-          const r = await fetch('/api/discs');
-          if(!r.ok) return;
-          const list = await r.json();
-          const tag = document.createElement('div');
-          tag.style.position='fixed';tag.style.bottom='8px';tag.style.left='50%';tag.style.transform='translateX(-50%)';
-          tag.style.background='#0f172a';tag.style.color='#fff';tag.style.padding='4px 10px';tag.style.borderRadius='14px';tag.style.font='12px system-ui,Segoe UI';tag.style.zIndex=9999998;
-          tag.textContent='Discs in DB: '+list.length;
-          document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(tag));
-          setTimeout(()=>tag.remove(),8000);
-        } catch {}
-      })();
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <div style="position:fixed;left:12px;bottom:12px;z-index:999998;font:14px system-ui,Segoe UI,Arial;">
-      <a href="/admin-basic" style="background:#065f46;color:#fff;text-decoration:none;padding:8px 12px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.25);font-weight:600;">Basic Admin Page</a>
-    </div>
-    <div id="emerald-debug-tools" style="position:fixed;bottom:8px;right:8px;background:#0f172a;color:#f1f5f9;font:12px system-ui,Segoe UI,Arial;padding:8px 10px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.35);z-index:999999;line-height:1.4;display:none;">
-      <div style="font-weight:600;margin-bottom:4px;">Emerald Debug</div>
-      <button id="dbg-list" style="margin:2px 0;padding:2px 6px;font-size:12px;cursor:pointer;">List Discs</button>
-      <button id="dbg-seed" style="margin:2px 0;padding:2px 6px;font-size:12px;cursor:pointer;">Seed If Empty</button>
-      <pre id="dbg-out" style="margin:4px 0 0;max-width:260px;max-height:140px;overflow:auto;background:#1e293b;color:#e2e8f0;padding:4px 6px;border-radius:4px;"></pre>
-      <div style="text-align:right;margin-top:4px;"><button id="dbg-close" style="background:#334155;color:#f8fafc;border:none;padding:2px 6px;border-radius:3px;cursor:pointer;">Close</button></div>
-    </div>
-    <script>
-      (function(){
-        // Show panel automatically if query ?debug=1 or local dev
-        const debug = /[?&]debug=1/.test(location.search) || location.hostname === 'localhost';
-        if(!debug) return;
-        const panel = document.getElementById('emerald-debug-tools');
-        if(!panel) return;
-        panel.style.display='block';
-        const out = document.getElementById('dbg-out');
-        function w(msg){ out.textContent = (msg instanceof Error? msg.stack: typeof msg==='object'? JSON.stringify(msg,null,2): String(msg)); }
-        document.getElementById('dbg-close').onclick=()=>panel.remove();
-        document.getElementById('dbg-list').onclick=async()=>{
-          try{
-            const r = await fetch('/api/admin/discs', { headers: { 'Accept':'application/json' }});
-            const text = await r.text();
-            let data;
-            try { data = JSON.parse(text); } catch { return w({ status:r.status, note:'Non-JSON response', snippet: text.slice(0,120) }); }
-            w({status:r.status, count:Array.isArray(data)?data.length:'n/a', first:Array.isArray(data)?(data[0]||null):data});
-          }catch(e){ w(e); }
-        };
-        document.getElementById('dbg-seed').onclick=async()=>{
-          try{
-            const r = await fetch('/api/debug/seed',{method:'POST', headers:{'Accept':'application/json'}});
-            const text = await r.text();
-            try { w(JSON.parse(text)); } catch { w({ status:r.status, note:'Seed non-JSON', snippet:text.slice(0,120) }); }
-          }catch(e){ w(e); }
-        };
-      })();
-    </script>
-    
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
-  </body>
+</body>
 </html>
